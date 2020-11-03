@@ -1,0 +1,12 @@
+domain: opdev.io
+layout: go.kubebuilder.io/v2
+multigroup: true
+projectName: pod-config-operator
+repo: github.com/acmenezes/podconfig-operator
+resources:
+- group: podconfig
+  kind: PodConfig
+  version: v1alpha1
+version: 3-alpha
+plugins:
+  go.sdk.operatorframework.io/v2-alpha: {}

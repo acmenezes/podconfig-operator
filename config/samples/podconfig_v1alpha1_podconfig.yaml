@@ -1,0 +1,7 @@
+apiVersion: podconfig.opdev.io/v1alpha1
+kind: PodConfig
+metadata:
+  name: podconfig-sample
+spec:
+  # Add fields here
+  foo: bar

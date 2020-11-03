@@ -1,0 +1,24 @@
+# permissions for end users to edit podconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: podconfig-editor-role
+rules:
+- apiGroups:
+  - podconfig.opdev.io
+  resources:
+  - podconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - podconfig.opdev.io
+  resources:
+  - podconfigs/status
+  verbs:
+  - get

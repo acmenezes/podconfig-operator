@@ -1,0 +1,20 @@
+# permissions for end users to view podconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: podconfig-viewer-role
+rules:
+- apiGroups:
+  - podconfig.opdev.io
+  resources:
+  - podconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - podconfig.opdev.io
+  resources:
+  - podconfigs/status
+  verbs:
+  - get
