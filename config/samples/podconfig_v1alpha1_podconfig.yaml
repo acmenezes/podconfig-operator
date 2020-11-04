@@ -4,4 +4,7 @@ metadata:
   name: podconfig-sample
 spec:
   # Add fields here
-  foo: bar
+  vlans:
+  - parentInterfaceName: "eth1"
+    vlanID: 15
+    bridgeName: "br1"

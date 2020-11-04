@@ -27,11 +27,13 @@ func (r *PodConfigReconciler) deploymentForPodConfig(PodConfig *PodConfig.PodCon
 					Labels: map[string]string{"app": "podconfig-operator"},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "PodConfig-webhook-acc",
+					ServiceAccountName: "default",
 					Containers: []corev1.Container{{
 						Name:            "cnf-example",
 						Image:           "registry.access.redhat.com/ubi8/ubi:latest",
 						ImagePullPolicy: corev1.PullAlways,
+						Command:         []string{"/bin/bash", "-c", "--"},
+						Args:            []string{"while true; do sleep 30; done;"},
 					}},
 				},
 			},

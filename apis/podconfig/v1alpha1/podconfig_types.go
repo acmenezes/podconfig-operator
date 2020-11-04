@@ -24,16 +24,16 @@ import (
 
 // VlanSpec type for Pods
 type VlanSpec struct {
-	ParentInterfaceName string
-	VlanID              int16
-	BridgeName          string
+	ParentInterfaceName string `json:"parentInterfaceName,omitempty"`
+	VlanID              int16  `json:"vlanID,omitempty"`
+	BridgeName          string `json:"bridgeName,omitempty"`
 }
 
 // PodConfigSpec defines the desired state of PodConfig
 type PodConfigSpec struct {
 
 	// VLANs to be added to subinterfaces
-	Vlan []VlanSpec
+	Vlans []VlanSpec `json:"vlans,omitempty"`
 }
 
 // PodConfigStatus defines the observed state of PodConfig
@@ -50,7 +50,7 @@ type PodConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PodConfigSpec   `json:"spec,omitempty"`
+	Spec   PodConfigSpec   `json:"spec"`
 	Status PodConfigStatus `json:"status,omitempty"`
 }
 
