@@ -22,6 +22,7 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      serviceAccountName: podconfig-operator-sa
       containers:
       - command:
         - /manager
@@ -32,8 +33,19 @@ spec:
         resources:
           limits:
             cpu: 100m
-            memory: 30Mi
+            memory: 300Mi
           requests:
             cpu: 100m
-            memory: 20Mi
+            memory: 200Mi
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - mountPath: /proc
+            name: proc
+      volumes:
+      - name: proc
+        hostPath:
+          # Mounting the proc file system to get process namespaces
+          path: /proc
+          type: Directory 
       terminationGracePeriodSeconds: 10
