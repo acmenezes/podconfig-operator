@@ -2,25 +2,25 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    control-plane: controller-manager
+    control-plane: podconfig-operator
   name: cnf-test
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: podconfig-operator
   namespace: cnf-test
   labels:
-    control-plane: controller-manager
+    control-plane: podconfig-operator
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      control-plane: podconfig-operator
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        control-plane: podconfig-operator
     spec:
       serviceAccountName: podconfig-operator-sa
       containers:
@@ -29,7 +29,7 @@ spec:
         args:
         - --enable-leader-election
         image: controller:latest
-        name: manager
+        name: podconfig-operator
         resources:
           limits:
             cpu: 100m
