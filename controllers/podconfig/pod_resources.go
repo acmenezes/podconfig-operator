@@ -5,27 +5,22 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *PodConfigReconciler) deploymentForPodConfig(PodConfig *PodConfig.PodConfig) *appsv1.Deployment {
+func (r *PodConfigReconciler) createDeploymentForPodConfig(PodConfig *PodConfig.PodConfig, objectMeta metav1.ObjectMeta) runtime.Object {
 
 	var replicas int32 = 2
 	deploy := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "cnf-example",
-			Namespace: "cnf-test",
-			Labels:    map[string]string{"app": "podconfig-operator"},
-		},
+		ObjectMeta: objectMeta,
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": "podconfig-operator"},
+				MatchLabels: objectMeta.Labels,
 			},
 			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": "podconfig-operator"},
-				},
+				ObjectMeta: objectMeta,
 				Spec: corev1.PodSpec{
 					ServiceAccountName: "default",
 					Containers: []corev1.Container{{

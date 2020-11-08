@@ -18,11 +18,13 @@ package controllers
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,9 +50,12 @@ type PodConfigReconciler struct {
 // Reconcile function for the PodConfig instance
 func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	reqLogger := r.Log.WithValues("podconfig", req.NamespacedName)
+	reqLogger := r.Log.WithName("podconfig-operator").WithValues("podconfig", req.NamespacedName)
 
-	// Fetch the PodConfig instance
+	// TODO: list all podconfigs provided in the namespace
+	// TODO: reconcile one by one checking the pods labelled with respective podconfigs
+
+	// Fetch the PodConfig object
 	podconfig := &podconfigv1alpha1.PodConfig{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, podconfig)
 
@@ -70,37 +75,35 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Deployments to mockup CNFs on OpenShift Cluster
 	// Creating deployment with 2 replicas to simulate CNF-to-CNF communication over Linux VLANs
 
-	deploy := &appsv1.Deployment{}
-	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: "cnf-example", Namespace: "cnf-test"}, deploy)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new deployment
-		deploy := r.deploymentForPodConfig(podconfig)
-		reqLogger.Info("Creating a new Deployment", "Deployment.Namespace", deploy.Namespace, "Deployment.Name", deploy.Name)
-		err = r.Client.Create(context.TODO(), deploy)
-		time.Sleep(500 * time.Millisecond)
-		if err != nil {
-			reqLogger.Error(err, "Failed to create new Deployment", "Deployment.Namespace", deploy.Namespace, "Deployment.Name", deploy.Name)
-			return reconcile.Result{}, err
-		}
-		// Deployment created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		reqLogger.Error(err, "Failed to get Deployment")
+	deployment := &appsv1.Deployment{}
+
+	objectMeta := setObjectMeta("cnf-example", "cnf-test", map[string]string{"podconfig": podconfig.Name})
+
+	res, err := r.reconcileResource(r.createDeploymentForPodConfig, podconfig, deployment, objectMeta, reqLogger)
+	if err != nil {
+		reqLogger.Error(err, "Failed to reconcile resource", "Name", "cnf-example", "Namespace", "cnf-test")
 		return reconcile.Result{}, err
 	}
 
-	// 1 - TODO: get the container IDs using the pod object itself under the deployment (it's on template Spec)
+	podList := &corev1.PodList{}
+	containerIDs := []string{}
+	err = r.Client.List(context.TODO(), podList, client.MatchingLabels{"podconfig": podconfig.Name})
+	if err == nil {
+		for _, pod := range podList.Items {
+			fmt.Printf("Pod Name: %s \n", pod.GetName())
+			fmt.Printf("Container ID: %s\n", pod.Status.ContainerStatuses[0].ContainerID)
+			containerIDs = append(containerIDs, pod.Status.ContainerStatuses[0].ContainerID)
+		}
+	} else {
+		fmt.Printf("unknown command\n")
+	}
 
-	// 2 - TODO: Connect with CRI-O through runtime-endpoint: unix:///var/run/crio/crio.sock
-	// List of libraries to import:
-	// "google.golang.org/grpc"
-	// "k8s.io/kubernetes/pkg/kubelet/cri/remote"
-	// "k8s.io/kubernetes/pkg/kubelet/util"
-	//  Consider the get connection function on the bottom of the file
+	for _, id := range containerIDs {
+		fmt.Printf("!!!!!!!!!!!!!!!!!!!!   Container ID is: %s\n", id)
+	}
+	// fmt.Println("Pods with configurations: %v", podList.Items[0])
 
-	// 3 - TODO: get the container status (a.k.a inspect) from cri api filtering with the IDs on step 1
-
-	return ctrl.Result{}, nil
+	return res, nil
 }
 
 // SetupWithManager for the podconfig controller
@@ -111,63 +114,44 @@ func (r *PodConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// func getConnection(endPoints []string) (*grpc.ClientConn, error) {
-// 	if endPoints == nil || len(endPoints) == 0 {
-// 		return nil, fmt.Errorf("endpoint is not set")
-// 	}
-// 	endPointsLen := len(endPoints)
-// 	var conn *grpc.ClientConn
-// 	for indx, endPoint := range endPoints {
-// 		logrus.Debugf("connect using endpoint '%s' with '%s' timeout", endPoint, Timeout)
-// 		addr, dialer, err := util.GetAddressAndDialer(endPoint)
-// 		if err != nil {
-// 			if indx == endPointsLen-1 {
-// 				return nil, err
-// 			}
-// 			logrus.Error(err)
-// 			continue
-// 		}
-// 		conn, err = grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(Timeout), grpc.WithContextDialer(dialer))
-// 		if err != nil {
-// 			errMsg := errors.Wrapf(err, "connect endpoint '%s', make sure you are running as root and the endpoint has been started", endPoint)
-// 			if indx == endPointsLen-1 {
-// 				return nil, errMsg
-// 			}
-// 			logrus.Error(errMsg)
-// 		} else {
-// 			logrus.Debugf("connected successfully using endpoint: %s", endPoint)
-// 			break
-// 		}
-// 	}
-// 	return conn, nil
-// }
+func setObjectMeta(name string, namespace string, labels map[string]string) metav1.ObjectMeta {
+	objectMeta := metav1.ObjectMeta{
+		Name:      name,
+		Namespace: namespace,
+		Labels:    labels,
+	}
+	return objectMeta
+}
 
-// ContainerStatus sends a ContainerStatusRequest to the server, and parses
-// the returned ContainerStatusResponse.
-// func ContainerStatus(client pb.RuntimeServiceClient, ID, output string, tmplStr string, quiet bool) error {
-// 	verbose := !(quiet)
-// 	if output == "" { // default to json output
-// 		output = "json"
-// 	}
-// 	if ID == "" {
-// 		return fmt.Errorf("ID cannot be empty")
-// 	}
-// 	request := &pb.ContainerStatusRequest{
-// 		ContainerId: ID,
-// 		Verbose:     verbose,
-// 	}
-// 	logrus.Debugf("ContainerStatusRequest: %v", request)
-// 	r, err := client.ContainerStatus(context.Background(), request)
-// 	logrus.Debugf("ContainerStatusResponse: %v", r)
-// 	if err != nil {
-// 		return err
-// 	}
+type createResourceFunc func(podconfig *podconfigv1alpha1.PodConfig, objectMeta metav1.ObjectMeta) runtime.Object
 
-// 	status, err := marshalContainerStatus(r.Status)
-// 	if err != nil {
-// 		return err
-// 	}
+func (r *PodConfigReconciler) reconcileResource(
+	createResource createResourceFunc,
+	podconfig *podconfigv1alpha1.PodConfig,
+	resource runtime.Object,
+	objectMeta metav1.ObjectMeta,
+	reqLogger logr.Logger) (ctrl.Result, error) {
 
-// 	switch output {
-// 	case "json", "yaml", "go-template":
-// 		return outputStatusInfo(status, r.Info, output, tmplStr)
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: objectMeta.Name, Namespace: objectMeta.Namespace}, resource)
+
+	if err != nil && errors.IsNotFound(err) {
+
+		// Define a new resource
+		resource := createResource(podconfig, objectMeta)
+		err = r.Client.Create(context.TODO(), resource)
+
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		// Resource created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+
+	} else if err != nil {
+
+		return reconcile.Result{}, err
+
+	}
+
+	return ctrl.Result{}, nil
+}

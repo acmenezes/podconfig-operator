@@ -31,7 +31,6 @@ type VlanSpec struct {
 
 // PodConfigSpec defines the desired state of PodConfig
 type PodConfigSpec struct {
-
 	// VLANs to be added to subinterfaces
 	Vlans []VlanSpec `json:"vlans,omitempty"`
 }
