@@ -40,6 +40,7 @@ func newVLANforPod(pid string) {
 	}
 }
 
-// 6 - Set the vlan interface https://gist.github.com/milosgajdos/9f68b1818dca886e9ae8
-
-// 7 - Set the bridge
+// func newBridge()
+// func newEthInterface()
+// func newVXLanInterface()
+// func ipRoute()
