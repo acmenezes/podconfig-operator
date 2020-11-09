@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -100,34 +99,15 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		fmt.Printf("unknown command\n")
 	}
 
-	// Connect with CRI-O's grpc endpoint
-	conn, err := getCRIOConnection()
-	if err != nil {
-		fmt.Println(err)
-		return res, err
+	// Apply configuration defined in the CR to pods by container ID.
+	// Here it doesn't matter which container ID inside the pod.
+	// The goal is to put runtime configurations on Pod shared namespaces
+	// like network and mount. Not intended for process specific namespaces.
+	for _, id := range containerIDs {
+
+		applyConfig(id)
+
 	}
-
-	// Make a container status request to CRI-O
-	containerStatusResponseList, err := getCRIOContainerStatus(containerIDs, conn)
-	if err != nil {
-		fmt.Println(err)
-		return res, nil
-	}
-	for _, resp := range containerStatusResponseList {
-
-		var parsedContainerInfo map[string]interface{}
-
-		containerInfo := resp.Info["info"]
-
-		json.Unmarshal([]byte(containerInfo), &parsedContainerInfo)
-
-		fmt.Println("Container pid is ", parsedContainerInfo["pid"])
-	}
-
-	// for _, id := range containerIDs {
-	// 	fmt.Printf("!!!!!!!!!!!!!!!!!!!!   Container ID is: %s\n", id)
-	// }
-	// fmt.Println("Pods with configurations: %v", podList.Items[0])
 
 	return res, nil
 }
