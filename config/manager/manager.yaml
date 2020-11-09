@@ -29,6 +29,7 @@ spec:
         args:
         - --enable-leader-election
         image: controller:latest
+        imagePullPolicy: Always
         name: podconfig-operator
         resources:
           limits:
@@ -42,10 +43,19 @@ spec:
         volumeMounts:
           - mountPath: /proc
             name: proc
+          - mountPath: /var/run/crio/crio.sock
+            name: crio-sock
       volumes:
       - name: proc
         hostPath:
           # Mounting the proc file system to get process namespaces
           path: /proc
-          type: Directory 
+          type: Directory
+      - name: crio-sock
+        hostPath:
+          # Mounting the proc file system to get process namespaces
+          path: /var/run/crio/crio.sock
+          type: Socket
+
+
       terminationGracePeriodSeconds: 10

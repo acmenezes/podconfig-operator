@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -85,6 +86,7 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return reconcile.Result{}, err
 	}
 
+	// Get the list of pods that have a podconfig label and retrive their first container IDs
 	podList := &corev1.PodList{}
 	containerIDs := []string{}
 	err = r.Client.List(context.TODO(), podList, client.MatchingLabels{"podconfig": podconfig.Name})
@@ -92,15 +94,39 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		for _, pod := range podList.Items {
 			fmt.Printf("Pod Name: %s \n", pod.GetName())
 			fmt.Printf("Container ID: %s\n", pod.Status.ContainerStatuses[0].ContainerID)
-			containerIDs = append(containerIDs, pod.Status.ContainerStatuses[0].ContainerID)
+			containerIDs = append(containerIDs, pod.Status.ContainerStatuses[0].ContainerID[8:])
 		}
 	} else {
 		fmt.Printf("unknown command\n")
 	}
 
-	for _, id := range containerIDs {
-		fmt.Printf("!!!!!!!!!!!!!!!!!!!!   Container ID is: %s\n", id)
+	// Connect with CRI-O's grpc endpoint
+	conn, err := getCRIOConnection()
+	if err != nil {
+		fmt.Println(err)
+		return res, err
 	}
+
+	// Make a container status request to CRI-O
+	containerStatusResponseList, err := getCRIOContainerStatus(containerIDs, conn)
+	if err != nil {
+		fmt.Println(err)
+		return res, nil
+	}
+	for _, resp := range containerStatusResponseList {
+
+		var parsedContainerInfo map[string]interface{}
+
+		containerInfo := resp.Info["info"]
+
+		json.Unmarshal([]byte(containerInfo), &parsedContainerInfo)
+
+		fmt.Println("Container pid is ", parsedContainerInfo["pid"])
+	}
+
+	// for _, id := range containerIDs {
+	// 	fmt.Printf("!!!!!!!!!!!!!!!!!!!!   Container ID is: %s\n", id)
+	// }
 	// fmt.Println("Pods with configurations: %v", podList.Items[0])
 
 	return res, nil

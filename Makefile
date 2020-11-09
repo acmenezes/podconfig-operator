@@ -40,6 +40,9 @@ manager: generate fmt vet
 run: generate fmt vet manifests
 	go run ./main.go
 
+# Run against the cluster from inside the cluster
+run-in-cluster: docker-build docker-push deploy
+
 # Install CRDs into a cluster
 install: manifests kustomize
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
@@ -52,6 +55,7 @@ uninstall: manifests kustomize
 deploy: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	watch "oc logs $(shell oc get pods | grep podconfig-operator | awk '{print $$1}')"
 
 # Delete the controller and the other artifacts in the configured Kubernetes cluster in ~/.kube/config
 delete: manifests kustomize

@@ -1,11 +1,55 @@
 package controllers
 
+import (
+	"context"
+	"fmt"
+
+	"google.golang.org/grpc"
+	cri "k8s.io/cri-api/pkg/apis/runtime/v1alpha2"
+)
+
 // 2 - TODO: Connect with CRI-O through runtime-endpoint: unix:///var/run/crio/crio.sock
 // List of libraries to import:
 // "google.golang.org/grpc"
 // "k8s.io/kubernetes/pkg/kubelet/cri/remote"
 // "k8s.io/kubernetes/pkg/kubelet/util"
 //  Consider the get connection commented function on the bottom of the file
+
+func getCRIOConnection() (*grpc.ClientConn, error) {
+
+	var conn *grpc.ClientConn
+
+	conn, err := grpc.Dial("unix:///var/run/crio/crio.sock", grpc.WithInsecure())
+
+	if err != nil {
+		fmt.Println("Connection failed: ", err)
+		return nil, err
+	}
+	fmt.Println("!!!!!!!!!!!!!!!! CRI-O Connection Succeeded !!!!!!!!!!!!!!!!!!!!")
+
+	// defer conn.Close()
+	return conn, nil
+}
+
+func getCRIOContainerStatus(containerIDs []string, grpcConn *grpc.ClientConn) ([]*cri.ContainerStatusResponse, error) {
+
+	criClient := cri.NewRuntimeServiceClient(grpcConn)
+
+	r := []*cri.ContainerStatusResponse{}
+	for _, id := range containerIDs {
+		request := &cri.ContainerStatusRequest{
+			ContainerId: id,
+			Verbose:     true,
+		}
+		response, err := cri.RuntimeServiceClient.ContainerStatus(criClient, context.Background(), request)
+		if err != nil {
+			return nil, err
+		}
+		r = append(r, response)
+	}
+
+	return r, nil
+}
 
 // 3 - TODO: get the container status (a.k.a inspect) from cri api filtering with the IDs on step 1
 // It's necessary to set a RuntimeServiceClient and run containerStatus with context and the request
