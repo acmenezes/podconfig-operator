@@ -1,11 +1,18 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
+
+	podconfigv1alpha1 "github.com/acmenezes/podconfig-operator/apis/podconfig/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func applyConfig(containerID string) error {
+func applyConfig(pod corev1.Pod, podconfig *podconfigv1alpha1.PodConfig) error {
+
+	// Get the container IDs for the given pod
+	containerIDs := getContainerIDs(pod)
 
 	// Connect with CRI-O's grpc endpoint
 	conn, err := getCRIOConnection()
@@ -15,28 +22,47 @@ func applyConfig(containerID string) error {
 	}
 
 	// Make a container status request to CRI-O
-	containerStatusResponse, err := getCRIOContainerStatus(containerID, conn)
+	// Here it doesn't matter which container ID inside the pod.
+	// The goal is to put runtime configurations on Pod shared namespaces
+	// like network and mount. Not intended for process/container specific namespaces.
+
+	containerStatusResponse, err := getCRIOContainerStatus(containerIDs[0], conn)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	// Parse response and get container pid for namespace
+	// Parse response and get the first container pid
 	pid := getPid(parseCRIOContainerInfo(containerStatusResponse))
 
-	newVLANforPod(pid)
+	newVLANsforPod(pod.ObjectMeta.Name, pid, podconfig)
 
 	return nil
 }
 
-func newVLANforPod(pid string) {
+func newVLANsforPod(podName string, pid string, podconfig *podconfigv1alpha1.PodConfig) {
 
-	cmd := exec.Command("nsenter", "-t", pid, "--net", "ip", "link", "add", "link", "eth0", "name", "eth0.8", "type", "vlan", "id", "8")
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("!!!!! Interface configured with success !!!!!!")
+	for _, vlan := range podconfig.Spec.Vlans {
+		stdout, stderr := exec.Command("nsenter", "-t", pid,
+			"--net",
+			"ip", "link", "add",
+			"link", vlan.ParentInterfaceName,
+			"name", vlan.ParentInterfaceName+"."+fmt.Sprintf("%v", vlan.VlanID),
+			"type", "vlan",
+			"id", fmt.Sprintf("%v", vlan.VlanID)).Output()
+
+		if stderr != nil {
+			fmt.Printf("%s\n", stdout)
+			fmt.Println(stderr)
+		} else {
+			vlanJSON, err := json.Marshal(vlan)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			fmt.Printf("%s\n", stdout)
+			fmt.Println("New Vlan configuration for pod " + podName + ": " + string(vlanJSON))
+		}
 	}
 }
 

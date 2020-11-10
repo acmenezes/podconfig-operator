@@ -85,27 +85,17 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return reconcile.Result{}, err
 	}
 
-	// Get the list of pods that have a podconfig label and retrive their first container IDs
+	// Get the list of pods that have a podconfig label
 	podList := &corev1.PodList{}
-	containerIDs := []string{}
 	err = r.Client.List(context.TODO(), podList, client.MatchingLabels{"podconfig": podconfig.Name})
-	if err == nil {
-		for _, pod := range podList.Items {
-			fmt.Printf("Pod Name: %s \n", pod.GetName())
-			fmt.Printf("Container ID: %s\n", pod.Status.ContainerStatuses[0].ContainerID)
-			containerIDs = append(containerIDs, pod.Status.ContainerStatuses[0].ContainerID[8:])
-		}
-	} else {
-		fmt.Printf("unknown command\n")
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	// Apply configuration defined in the CR to pods by container ID.
-	// Here it doesn't matter which container ID inside the pod.
-	// The goal is to put runtime configurations on Pod shared namespaces
-	// like network and mount. Not intended for process specific namespaces.
-	for _, id := range containerIDs {
+	// Apply configuration defined in the podconfig CR to pods with the appropriate label.
+	for _, pod := range podList.Items {
 
-		applyConfig(id)
+		applyConfig(pod, podconfig)
 
 	}
 
@@ -158,6 +148,5 @@ func (r *PodConfigReconciler) reconcileResource(
 		return reconcile.Result{}, err
 
 	}
-
 	return ctrl.Result{}, nil
 }

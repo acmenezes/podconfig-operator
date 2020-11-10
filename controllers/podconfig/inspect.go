@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"google.golang.org/grpc"
+	corev1 "k8s.io/api/core/v1"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1alpha2"
 )
 
@@ -55,4 +56,16 @@ func getPid(parsedContainerInfo map[string]interface{}) string {
 
 	return fmt.Sprintf("%.0f", parsedContainerInfo["pid"])
 
+}
+
+func getContainerIDs(pod corev1.Pod) []string {
+
+	containerIDs := []string{}
+
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+
+		containerIDs = append(containerIDs, containerStatus.ContainerID[8:])
+
+	}
+	return containerIDs
 }

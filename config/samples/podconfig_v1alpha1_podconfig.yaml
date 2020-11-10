@@ -5,6 +5,6 @@ metadata:
 spec:
   # Add fields here
   vlans:
-  - parentInterfaceName: "eth1"
+  - parentInterfaceName: "eth0"
     vlanID: 15
-    bridgeName: "br1"
+    bridgeName: "br0"
