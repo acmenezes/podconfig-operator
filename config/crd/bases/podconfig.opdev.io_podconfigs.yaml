@@ -36,6 +36,15 @@ spec:
           spec:
             description: PodConfigSpec defines the desired state of PodConfig
             properties:
+              bridge:
+                description: Bridge on the host for Pod connection
+                type: string
+              sampleDeployment:
+                description: Flag to enable sample deployment
+                type: boolean
+              veth:
+                description: New custom veth interface for Pods
+                type: string
               vlans:
                 description: VLANs to be added to subinterfaces
                 items:

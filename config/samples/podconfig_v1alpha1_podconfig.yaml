@@ -4,7 +4,10 @@ metadata:
   name: podconfig-sample
 spec:
   # Add fields here
+  bridge: "pcobr"
+  veth: "pco0"
+
   vlans:
-  - parentInterfaceName: "eth0"
+  - parentInterfaceName: "pco0"
     vlanID: 15
-    bridgeName: "br0"
+    bridgeName: "pcobr"

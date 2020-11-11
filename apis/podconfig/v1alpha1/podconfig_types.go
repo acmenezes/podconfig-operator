@@ -31,6 +31,15 @@ type VlanSpec struct {
 
 // PodConfigSpec defines the desired state of PodConfig
 type PodConfigSpec struct {
+	// Flag to enable sample deployment
+	SampleDeployment bool `json:"sampleDeployment,omitempty"`
+
+	// New custom veth interface for Pods
+	Veth string `json:"veth,omitempty"`
+
+	// Bridge on the host for Pod connection
+	Bridge string `json:"bridge,omitempty"`
+
 	// VLANs to be added to subinterfaces
 	Vlans []VlanSpec `json:"vlans,omitempty"`
 }
