@@ -41,7 +41,7 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
-          - mountPath: /proc
+          - mountPath: /tmp/proc
             name: proc
           - mountPath: /var/run/crio/crio.sock
             name: crio-sock

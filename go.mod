@@ -3,6 +3,7 @@ module github.com/acmenezes/podconfig-operator
 go 1.13
 
 require (
+	github.com/containernetworking/plugins v0.8.7
 	github.com/docker/libcontainer v2.2.1+incompatible
 	github.com/go-logr/logr v0.1.0
 	github.com/milosgajdos/tenus v0.0.3

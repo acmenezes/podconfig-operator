@@ -29,16 +29,45 @@ type VlanSpec struct {
 	BridgeName          string `json:"bridgeName,omitempty"`
 }
 
+// Link type for new Pod interfaces
+type Link struct {
+	Name     string `json:"name,omitempty"`
+	LinkType string `json:"linkType,omitemtpy"` // temporarily used for veth pair
+	Parent   string `json:"parent,omitemtpy"`   // name for the parent interface
+	Master   string `json:"master,omitempty"`   // name for the master bridge
+
+	// For use with the netlink package  may access all types on the ip stack
+	// Index        int                     `json:"index,omitempty"`
+	// MTU          int                     `json:"mtu,omitempty"`
+	// TxQLen       int                     `json:"txqlen,omitempty"` // Transmit Queue Length
+	// HardwareAddr net.HardwareAddr        `json:"hardwareAddr,omitempty"`
+	// Flags        net.Flags               `json:"flags,omitempty"`
+	// RawFlags     uint32                  `json:"rawFlags,omitempty"`
+	// ParentIndex  int                     `json:"parentIndex,omitempty"` // index of the parent link device
+	// MasterIndex  int                     `json:"masterIndex,omitempty"` // must be the index of a bridge
+	// Alias        string                  `json:"alias,omitempty"`
+	// Statistics   *netlink.LinkStatistics `json:"statistics,omitempty"`
+	// Promisc      int                     `json:"promisc,omitempty"`
+	// Xdp          *netlink.LinkXdp        `json:"xdp,omitempty"`
+	// EncapType    string                  `json:"encapType,omitempty"`
+	// Protinfo     *netlink.Protinfo       `json:"protinfo,omitempty"`
+	// OperState    netlink.LinkOperState   `json:"operState,omitempty"`
+	// NumTxQueues  int                     `json:"numTxQueues,omitempty"`
+	// NumRxQueues  int                     `json:"numRxQueues,omitempty"`
+	// GSOMaxSize   uint32                  `json:"gsoMaxSize,omitempty"`
+	// GSOMaxSegs   uint32                  `json:"gsoMaxSegs,omitempty"`
+	// Vfs          []netlink.VfInfo        `json:"vfs,omitempty"` // virtual functions available on link
+	// Group        uint32                  `json:"group,omitempty"`
+	// Slave        netlink.LinkSlave       `json:"slave,omitempty"`
+}
+
 // PodConfigSpec defines the desired state of PodConfig
 type PodConfigSpec struct {
 	// Flag to enable sample deployment
 	SampleDeployment bool `json:"sampleDeployment,omitempty"`
 
-	// New custom veth interface for Pods
-	Veth string `json:"veth,omitempty"`
-
-	// Bridge on the host for Pod connection
-	Bridge string `json:"bridge,omitempty"`
+	// List of new interfaces to configure on Pod
+	NetworkAttachments []Link `json:"networkAttachments,omitempty"`
 
 	// VLANs to be added to subinterfaces
 	Vlans []VlanSpec `json:"vlans,omitempty"`

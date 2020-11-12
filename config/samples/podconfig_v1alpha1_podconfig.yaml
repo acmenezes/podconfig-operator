@@ -4,10 +4,8 @@ metadata:
   name: podconfig-sample
 spec:
   # Add fields here
-  bridge: "pcobr"
-  veth: "pco0"
-
-  vlans:
-  - parentInterfaceName: "pco0"
-    vlanID: 15
-    bridgeName: "pcobr"
+  networkAttachments:
+    - name: pco0
+      linkType: veth
+      master: pcobr1
+      parent: pco0
