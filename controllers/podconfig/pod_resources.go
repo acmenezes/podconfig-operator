@@ -24,8 +24,9 @@ func (r *PodConfigReconciler) createDeploymentForPodConfig(PodConfig *PodConfig.
 				Spec: corev1.PodSpec{
 					ServiceAccountName: "default",
 					Containers: []corev1.Container{{
-						Name:            "cnf-example",
-						Image:           "registry.access.redhat.com/ubi8/ubi:latest",
+						Name:  "cnf-example",
+						Image: "nicolaka/netshoot:latest",
+						// Image:           "registry.access.redhat.com/ubi8/ubi:latest",
 						ImagePullPolicy: corev1.PullAlways,
 						Command:         []string{"/bin/bash", "-c", "--"},
 						Args:            []string{"while true; do sleep 30; done;"},
