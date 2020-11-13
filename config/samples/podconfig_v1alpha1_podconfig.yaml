@@ -5,8 +5,13 @@ metadata:
 spec:
   # Add fields here
   networkAttachments:
-    - name: pco0
+    - name: pc0
       linkType: veth
-      master: pcobr1
-      parent: pco0
+      master: pcbr0
+      parent: pc0
       cidr: "192.168.100.0/24"
+    - name: pc1
+      linkType: veth
+      master: pcbr1
+      parent: pc1
+      cidr: "192.168.99.0/24"      

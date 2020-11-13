@@ -37,10 +37,9 @@ func (ips *ipsInUse) getFreeIP(network string) *netlink.Addr {
 	ipv4Addr, _, _ := net.ParseCIDR(network)
 	ip := net.ParseIP(fmt.Sprintf("%v", ipv4Addr))
 	ip = ip.To4()
-	ip[3]++
 
 	for i := 1; i <= 254; i++ {
-
+		ip[3]++
 		if !ips.Contains(ip) {
 
 			ips.AllocateIP(ip)
