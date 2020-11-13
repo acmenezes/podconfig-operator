@@ -9,3 +9,4 @@ spec:
       linkType: veth
       master: pcobr1
       parent: pco0
+      cidr: "192.168.100.0/24"

@@ -41,6 +41,8 @@ spec:
                 items:
                   description: Link type for new Pod interfaces
                   properties:
+                    cidr:
+                      type: string
                     linkType:
                       type: string
                     master:
