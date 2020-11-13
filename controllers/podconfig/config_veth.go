@@ -29,6 +29,15 @@ func newVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) error {
 	// on the pods namespace
 
 	err = targetNS.Do(func(hostNs ns.NetNS) error {
+
+		// Attempt to check the existence of the pod veth
+		// If if already exists it skips creation and configuration
+		// If any other error comes up it attempts to create
+		// TODO: check netlink error types to better handle this
+
+		// _, err := netlink.LinkByName(podVethName)
+		// if err != nil {
+
 		veth := &netlink.Veth{
 			LinkAttrs: netlink.LinkAttrs{
 				Name: podVethName,
@@ -70,7 +79,7 @@ func newVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) error {
 		if err != nil {
 			return fmt.Errorf("failed to move veth to host netns: %v", err)
 		}
-
+		// }
 		return nil
 	})
 	if err != nil {

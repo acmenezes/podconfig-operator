@@ -1,0 +1,21 @@
+apiVersion: podconfig.opdev.io/v1alpha1
+kind: PodConfig
+metadata:
+  name: podconfig-sample-a
+spec:
+  # Add fields here
+  sampleDeployment:
+    create: true
+    name: cnf-example-a
+    
+  networkAttachments:
+    - name: pc0
+      linkType: veth
+      master: pcbr0
+      parent: pc0
+      cidr: "192.168.100.0/24"
+    - name: pc1
+      linkType: veth
+      master: pcbr1
+      parent: pc1
+      cidr: "192.168.99.0/24"      

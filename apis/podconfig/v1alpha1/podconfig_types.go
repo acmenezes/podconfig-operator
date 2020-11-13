@@ -62,10 +62,16 @@ type Link struct {
 	// Slave        netlink.LinkSlave       `json:"slave,omitempty"`
 }
 
+// SampleResource for testing with pods
+type SampleResource struct {
+	Create bool   `json:"create,omitempty"`
+	Name   string `json:"name,omitempty"`
+}
+
 // PodConfigSpec defines the desired state of PodConfig
 type PodConfigSpec struct {
 	// Flag to enable sample deployment
-	SampleDeployment bool `json:"sampleDeployment,omitempty"`
+	SampleDeployment SampleResource `json:"sampleDeployment,omitempty"`
 
 	// List of new interfaces to configure on Pod
 	NetworkAttachments []Link `json:"networkAttachments,omitempty"`
