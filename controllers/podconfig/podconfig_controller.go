@@ -23,10 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -52,54 +49,59 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reqLogger := r.Log.WithName("podconfig-operator").WithValues("podconfig", req.NamespacedName)
 
-	// TODO: list all podconfigs provided in the namespace
-	// TODO: reconcile one by one checking the pods labelled with respective podconfigs
-
-	// Fetch the PodConfig object
-	podconfig := &podconfigv1alpha1.PodConfig{}
-	err := r.Client.Get(context.TODO(), req.NamespacedName, podconfig)
-
+	// List all pod configuration objects present on the namespace
+	podConfigList := &podconfigv1alpha1.PodConfigList{}
+	err := r.Client.List(context.TODO(), podConfigList)
 	if err != nil {
-		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return reconcile.Result{}, nil
-		}
-		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
 
+	if len(podConfigList.Items) <= 0 {
+		return reconcile.Result{}, nil
+	}
 	// TODO: Update the status field with conditions while creating the new instance
 
 	// Deployments to mockup CNFs on OpenShift Cluster
 	// Creating deployment with 2 replicas to simulate CNF-to-CNF communication over Linux VLANs
 
-	deployment := &appsv1.Deployment{}
+	for _, podConfig := range podConfigList.Items {
 
-	objectMeta := setObjectMeta("cnf-example", "cnf-test", map[string]string{"podconfig": podconfig.Name})
+		if podConfig.Spec.SampleDeployment.Create {
 
-	res, err := r.reconcileResource(r.createDeploymentForPodConfig, podconfig, deployment, objectMeta, reqLogger)
-	if err != nil {
-		reqLogger.Error(err, "Failed to reconcile resource", "Name", "cnf-example", "Namespace", "cnf-test")
-		return reconcile.Result{}, err
+			err := r.createSampleDeployment(&podConfig, podConfig.Spec.SampleDeployment.Name, podConfig.ObjectMeta.Namespace, map[string]string{"podconfig": podConfig.ObjectMeta.Name})
+			if err != nil {
+				reqLogger.Error(err, "Failed to reconcile resource", "Name", "cnf-example", "Namespace", "cnf-test")
+				return reconcile.Result{}, err
+			}
+
+		}
+
+		// Get the list of pods that have a podconfig label
+		podList := &corev1.PodList{}
+		err = r.Client.List(context.TODO(), podList, client.MatchingLabels{"podconfig": podConfig.ObjectMeta.Name})
+		if err != nil {
+			fmt.Println(err)
+		}
+		// Pods need to be at least created to proceed
+		// Checking if the list is empty
+		if len(podList.Items) <= 0 {
+			return reconcile.Result{}, nil
+		}
+		// Apply configuration defined in the podconfig CR to pods with the appropriate label.
+		for _, pod := range podList.Items {
+
+			// Pods need to be running in order to receive new configuration
+			// Wait for pod phase running
+			if pod.Status.Phase != "Running" {
+				fmt.Printf("pod %v phase is %v, requeuing... ", pod.ObjectMeta.Name, pod.Status.Phase)
+				return reconcile.Result{}, nil
+			}
+
+			applyConfig(pod, &podConfig)
+
+		}
 	}
-
-	// Get the list of pods that have a podconfig label
-	podList := &corev1.PodList{}
-	err = r.Client.List(context.TODO(), podList, client.MatchingLabels{"podconfig": podconfig.Name})
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// Apply configuration defined in the podconfig CR to pods with the appropriate label.
-	for _, pod := range podList.Items {
-
-		applyConfig(pod, podconfig)
-
-	}
-
-	return res, nil
+	return reconcile.Result{}, nil
 }
 
 // SetupWithManager for the podconfig controller
@@ -108,45 +110,4 @@ func (r *PodConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&podconfigv1alpha1.PodConfig{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
-}
-
-func setObjectMeta(name string, namespace string, labels map[string]string) metav1.ObjectMeta {
-	objectMeta := metav1.ObjectMeta{
-		Name:      name,
-		Namespace: namespace,
-		Labels:    labels,
-	}
-	return objectMeta
-}
-
-type createResourceFunc func(podconfig *podconfigv1alpha1.PodConfig, objectMeta metav1.ObjectMeta) runtime.Object
-
-func (r *PodConfigReconciler) reconcileResource(
-	createResource createResourceFunc,
-	podconfig *podconfigv1alpha1.PodConfig,
-	resource runtime.Object,
-	objectMeta metav1.ObjectMeta,
-	reqLogger logr.Logger) (ctrl.Result, error) {
-
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: objectMeta.Name, Namespace: objectMeta.Namespace}, resource)
-
-	if err != nil && errors.IsNotFound(err) {
-
-		// Define a new resource
-		resource := createResource(podconfig, objectMeta)
-		err = r.Client.Create(context.TODO(), resource)
-
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
-		// Resource created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-
-	} else if err != nil {
-
-		return reconcile.Result{}, err
-
-	}
-	return ctrl.Result{}, nil
 }

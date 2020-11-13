@@ -35,6 +35,7 @@ type Link struct {
 	LinkType string `json:"linkType,omitemtpy"` // temporarily used for veth pair
 	Parent   string `json:"parent,omitemtpy"`   // name for the parent interface
 	Master   string `json:"master,omitempty"`   // name for the master bridge
+	CIDR     string `json:"cidr,omitempty"`
 
 	// For use with the netlink package  may access all types on the ip stack
 	// Index        int                     `json:"index,omitempty"`
@@ -61,10 +62,16 @@ type Link struct {
 	// Slave        netlink.LinkSlave       `json:"slave,omitempty"`
 }
 
+// SampleResource for testing with pods
+type SampleResource struct {
+	Create bool   `json:"create,omitempty"`
+	Name   string `json:"name,omitempty"`
+}
+
 // PodConfigSpec defines the desired state of PodConfig
 type PodConfigSpec struct {
 	// Flag to enable sample deployment
-	SampleDeployment bool `json:"sampleDeployment,omitempty"`
+	SampleDeployment SampleResource `json:"sampleDeployment,omitempty"`
 
 	// List of new interfaces to configure on Pod
 	NetworkAttachments []Link `json:"networkAttachments,omitempty"`

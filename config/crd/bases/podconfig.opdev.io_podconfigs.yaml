@@ -41,6 +41,8 @@ spec:
                 items:
                   description: Link type for new Pod interfaces
                   properties:
+                    cidr:
+                      type: string
                     linkType:
                       type: string
                     master:
@@ -56,7 +58,12 @@ spec:
                 type: array
               sampleDeployment:
                 description: Flag to enable sample deployment
-                type: boolean
+                properties:
+                  create:
+                    type: boolean
+                  name:
+                    type: string
+                type: object
               vlans:
                 description: VLANs to be added to subinterfaces
                 items:

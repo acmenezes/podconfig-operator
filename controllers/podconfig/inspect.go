@@ -62,6 +62,7 @@ func getContainerIDs(pod corev1.Pod) []string {
 
 	containerIDs := []string{}
 
+	// get container ID list
 	for _, containerStatus := range pod.Status.ContainerStatuses {
 
 		containerIDs = append(containerIDs, containerStatus.ContainerID[8:])
