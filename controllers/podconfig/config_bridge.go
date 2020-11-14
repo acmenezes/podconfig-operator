@@ -71,3 +71,31 @@ func createBridge(bridge string, ipAddr *netlink.Addr) error {
 	fmt.Println("Bridge created successfully on the host.")
 	return nil
 }
+
+func deleteBridge(bridge string) error {
+
+	targetNS, err := ns.GetNS("/tmp/proc/1/ns/net")
+	if err != nil {
+		return fmt.Errorf("error getting host network namespace: %v", err)
+	}
+
+	err = targetNS.Do(func(hostNs ns.NetNS) error {
+
+		br, err := netlink.LinkByName(bridge)
+		if err != nil {
+			return fmt.Errorf("error looking up for bridge %v %v", bridge, err)
+		}
+
+		err = netlink.LinkDel(br)
+		if err != nil {
+			return fmt.Errorf("failed to delete bridge %q: %v", bridge, err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		fmt.Printf("%v\n", err)
+	}
+
+	return nil
+}

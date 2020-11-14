@@ -52,9 +52,30 @@ func parseCRIOContainerInfo(statusResponse *cri.ContainerStatusResponse) map[str
 	return parsedContainerInfo
 }
 
-func getPid(parsedContainerInfo map[string]interface{}) string {
+func getPid(pod corev1.Pod) (string, error) {
 
-	return fmt.Sprintf("%.0f", parsedContainerInfo["pid"])
+	// Get the container IDs for the given pod
+	containerIDs := getContainerIDs(pod)
+
+	// Connect with CRI-O's grpc endpoint
+	conn, err := getCRIOConnection()
+	if err != nil {
+		return "", fmt.Errorf("Error getting CRIO connection: %v", err)
+	}
+
+	// Make a container status request to CRI-O
+	// Here it doesn't matter which container ID inside the pod.
+	// The goal is to put runtime configurations on Pod shared namespaces
+	// like network and mount. Not intended for process/container specific namespaces.
+
+	containerStatusResponse, err := getCRIOContainerStatus(containerIDs[0], conn)
+	if err != nil {
+		return "", fmt.Errorf("Error getting CRIO container status: %v", err)
+	}
+
+	parsedContainerInfo := parseCRIOContainerInfo(containerStatusResponse)
+
+	return fmt.Sprintf("%.0f", parsedContainerInfo["pid"]), nil
 
 }
 

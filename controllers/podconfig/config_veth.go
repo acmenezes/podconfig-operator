@@ -8,7 +8,7 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-func newVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) error {
+func createVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) error {
 
 	// Get the pods namespace object
 	targetNS, err := ns.GetNS("/tmp/proc/" + pid + "/ns/net")
@@ -23,7 +23,7 @@ func newVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) error {
 	podVethName := networkAttachment.Name + pid
 	hostVethName := "h" + networkAttachment.Name + pid
 
-	// The Do function takes cares of all side effects of switching namespaces
+	// The Do function takes care of all side effects of switching namespaces
 	// and spawning new threads or child processes on the destination namespaces
 	// Since targetNS belongs to pod all instructions enclosed by Do() will be run
 	// on the pods namespace
@@ -116,5 +116,43 @@ func newVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) error {
 	}
 
 	fmt.Println("Veth pair created successfully")
+	return nil
+}
+
+func deleteVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) error {
+
+	targetNS, err := ns.GetNS("/tmp/proc/" + pid + "/ns/net")
+
+	if err != nil {
+		return fmt.Errorf("Error getting Pod network namespace: %v", err)
+	}
+
+	// Appending the process id number to the names to identify the links
+	// with the container processes
+
+	podVethName := networkAttachment.Name + pid
+
+	// The Do function takes care of all side effects of switching namespaces
+	// and spawning new threads or child processes on the destination namespaces
+	// Since targetNS belongs to pod all instructions enclosed by Do() will be run
+	// on the pods namespace
+
+	err = targetNS.Do(func(hostNs ns.NetNS) error {
+		// Get newly created pod link by name
+		podVeth, err := netlink.LinkByName(podVethName)
+		if err != nil {
+			return fmt.Errorf("failed to lookup %q: %v", podVethName, err)
+		}
+
+		err = netlink.LinkDel(podVeth)
+		if err != nil {
+			return fmt.Errorf("failed to delete link %q: %v", podVethName, err)
+		}
+		return nil
+	})
+	if err != nil {
+		fmt.Printf("%v\n", err)
+	}
+
 	return nil
 }

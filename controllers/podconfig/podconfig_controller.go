@@ -61,31 +61,69 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	// TODO: Update the status field with conditions while creating the new instance
 
-	// Deployments to mockup CNFs on OpenShift Cluster
-	// Creating deployment with 2 replicas to simulate CNF-to-CNF communication over Linux VLANs
-
 	for _, podConfig := range podConfigList.Items {
 
+		finalizer := "podconfig.finalizers.opdev.io"
+
+		// examine DeletionTimestamp to determine if podConfig is under deletion
+		if podConfig.ObjectMeta.DeletionTimestamp.IsZero() {
+
+			// podConfig is not being deleted, so if it does not have our finalizer,
+			// then lets add the finalizer and update the object. This is equivalent
+			// registering our finalizer.
+
+			if !containsString(podConfig.GetFinalizers(), finalizer) {
+				podConfig.SetFinalizers(append(podConfig.GetFinalizers(), finalizer))
+				if err := r.Update(context.Background(), &podConfig); err != nil {
+					return reconcile.Result{}, err
+				}
+			}
+		} else {
+			// podConfig is being deleted
+			if containsString(podConfig.GetFinalizers(), finalizer) {
+
+				// finalizer is present, delete configurations
+
+				// Get the pods with matching labels to podConfig
+				podList, err := r.listPodsWithMatchingLabels(podConfig)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+				// Delete configuration defined in the podconfig CR from pods with the appropriate label.
+				for _, pod := range podList.Items {
+
+					if err := deleteConfig(pod, &podConfig); err != nil {
+						// if fail to delete the external dependency here, return with error
+						// so that it can be retried
+						return reconcile.Result{}, err
+					}
+				}
+
+				// remove our finalizer from the list and update it.
+				podConfig.SetFinalizers(removeString(podConfig.GetFinalizers(), finalizer))
+				if err := r.Update(context.Background(), &podConfig); err != nil {
+					return reconcile.Result{}, err
+				}
+			}
+
+			// Stop reconciliation as the item is being deleted
+			return ctrl.Result{}, nil
+		}
+
 		if podConfig.Spec.SampleDeployment.Create {
+
+			// Creates test deployments to PoC pod-to-pod communication over On demmand created Linux Veth Pairs
 
 			err := r.createSampleDeployment(&podConfig, podConfig.Spec.SampleDeployment.Name, podConfig.ObjectMeta.Namespace, map[string]string{"podconfig": podConfig.ObjectMeta.Name})
 			if err != nil {
 				reqLogger.Error(err, "Failed to reconcile resource", "Name", "cnf-example", "Namespace", "cnf-test")
 				return reconcile.Result{}, err
 			}
-
 		}
 
-		// Get the list of pods that have a podconfig label
-		podList := &corev1.PodList{}
-		err = r.Client.List(context.TODO(), podList, client.MatchingLabels{"podconfig": podConfig.ObjectMeta.Name})
+		podList, err := r.listPodsWithMatchingLabels(podConfig)
 		if err != nil {
-			fmt.Println(err)
-		}
-		// Pods need to be at least created to proceed
-		// Checking if the list is empty
-		if len(podList.Items) <= 0 {
-			return reconcile.Result{}, nil
+			return reconcile.Result{}, err
 		}
 		// Apply configuration defined in the podconfig CR to pods with the appropriate label.
 		for _, pod := range podList.Items {
@@ -104,10 +142,45 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return reconcile.Result{}, nil
 }
 
+func (r *PodConfigReconciler) listPodsWithMatchingLabels(podConfig podconfigv1alpha1.PodConfig) (*corev1.PodList, error) {
+	// Get the list of pods that have a podconfig label
+	podList := &corev1.PodList{}
+	err := r.Client.List(context.TODO(), podList, client.MatchingLabels{"podconfig": podConfig.ObjectMeta.Name})
+	if err != nil {
+		fmt.Println(err)
+	}
+	// Pods need to be at least created to proceed
+	// Checking if the list is empty
+	if len(podList.Items) <= 0 {
+		return &corev1.PodList{}, fmt.Errorf("empty pod list")
+	}
+	return podList, nil
+}
+
 // SetupWithManager for the podconfig controller
 func (r *PodConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&podconfigv1alpha1.PodConfig{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
+}
+
+// Helper functions to check and remove string from a slice of strings.
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+func removeString(slice []string, s string) (result []string) {
+	for _, item := range slice {
+		if item == s {
+			continue
+		}
+		result = append(result, item)
+	}
+	return
 }

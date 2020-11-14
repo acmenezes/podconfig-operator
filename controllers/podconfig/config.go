@@ -9,31 +9,14 @@ import (
 
 func applyConfig(pod corev1.Pod, podconfig *podconfigv1alpha1.PodConfig) error {
 
-	// Get the container IDs for the given pod
-	containerIDs := getContainerIDs(pod)
-
-	// Connect with CRI-O's grpc endpoint
-	conn, err := getCRIOConnection()
+	// Get the first container pid for pod
+	pid, err := getPid(pod)
 	if err != nil {
-		fmt.Printf("Error getting CRIO connection: %v\n", err)
+		fmt.Printf("Error getting container pid %v", err)
 		return err
 	}
 
-	// Make a container status request to CRI-O
-	// Here it doesn't matter which container ID inside the pod.
-	// The goal is to put runtime configurations on Pod shared namespaces
-	// like network and mount. Not intended for process/container specific namespaces.
-
-	containerStatusResponse, err := getCRIOContainerStatus(containerIDs[0], conn)
-	if err != nil {
-		fmt.Printf("Error getting CRIO container status: %v\n", err)
-		return err
-	}
-
-	// Parse response and get the first container pid
-	pid := getPid(parseCRIOContainerInfo(containerStatusResponse))
-
-	err = createNetworkAttachments(pod.ObjectMeta.Name, pid, podconfig.Spec.NetworkAttachments)
+	err = createNetworkAttachments(pid, podconfig.Spec.NetworkAttachments)
 	if err != nil {
 		fmt.Printf("Error creating network attachments: %v\n", err)
 		return err
@@ -42,7 +25,23 @@ func applyConfig(pod corev1.Pod, podconfig *podconfigv1alpha1.PodConfig) error {
 	return nil
 }
 
-func createNetworkAttachments(podName string, pid string, networkAttachments []podconfigv1alpha1.Link) error {
+func deleteConfig(pod corev1.Pod, podconfig *podconfigv1alpha1.PodConfig) error {
+	// Get the first container pid for pod
+	pid, err := getPid(pod)
+	if err != nil {
+		fmt.Printf("Error getting container pid %v", err)
+		return err
+	}
+
+	err = deleteNetworkAttachments(pid, podconfig.Spec.NetworkAttachments)
+	if err != nil {
+		fmt.Printf("Error creating network attachments: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func createNetworkAttachments(pid string, networkAttachments []podconfigv1alpha1.Link) error {
 
 	for _, na := range networkAttachments {
 
@@ -63,7 +62,7 @@ func createNetworkAttachments(podName string, pid string, networkAttachments []p
 		}
 
 		// Create veth pairs for the new networkAttachment
-		err = newVethForPod(pid, na)
+		err = createVethForPod(pid, na)
 		if err != nil {
 			fmt.Printf("Error creating new veth pair for pod: %v\n", err)
 			return err
@@ -71,5 +70,26 @@ func createNetworkAttachments(podName string, pid string, networkAttachments []p
 	}
 
 	fmt.Println("New network attachment created successfully.")
+	return nil
+}
+
+func deleteNetworkAttachments(pid string, networkAttachments []podconfigv1alpha1.Link) error {
+
+	for _, na := range networkAttachments {
+
+		// delete veth pair for pod network attachments
+		err := deleteVethForPod(pid, na)
+		if err != nil {
+			fmt.Printf("Error deleting new veth pair for pod: %v\n", err)
+			return err
+		}
+
+		// delete remaining bridge
+		err = deleteBridge(na.Master)
+		if err != nil {
+			fmt.Printf("Error creating bridge device %s: %v\n", na.Master, err)
+			return err
+		}
+	}
 	return nil
 }
