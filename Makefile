@@ -55,7 +55,6 @@ uninstall: manifests kustomize
 deploy: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
-	watch "oc logs $(shell oc get pods | grep podconfig-operator | awk '{print $$1}')"
 
 # Delete the controller and the other artifacts in the configured Kubernetes cluster in ~/.kube/config
 delete: manifests kustomize
