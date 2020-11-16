@@ -137,21 +137,23 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return reconcile.Result{}, nil
 			}
 
-			configList, err := applyConfig(pod, &podConfig)
+			_, err := applyConfig(pod, &podConfig)
 			if err != nil {
 				fmt.Printf("%v", err)
 				return reconcile.Result{}, nil
 			}
 
-			configStatus := podconfigv1alpha1.PodConfiguration{PodName: pod.ObjectMeta.Name, AppliedConfig: configList}
+			// configStatus := podconfigv1alpha1.PodConfiguration{PodName: pod.ObjectMeta.Name, AppliedConfig: configList}
 
-			podConfig.Status.Phase = podconfigv1alpha1.PodConfigConfigured
-			fmt.Printf("%v", podConfig.Status.Phase)
+			// podConfig.Status.Phase = podconfigv1alpha1.PodConfigConfigured
+			// fmt.Printf("%v", podConfig.Status.Phase)
 
-			podConfig.Status.Configuration = configStatus
-			fmt.Printf("%v", podConfig.Status.Configuration)
+			podConfig.Status.Phase = "configured"
 
-			if err := r.Client.Update(context.TODO(), &podConfig); err != nil {
+			// podConfig.Status.Configuration = configStatus
+			// fmt.Printf("%v", podConfig.Status.Configuration)
+
+			if err := r.Client.Status().Update(context.TODO(), &podConfig); err != nil {
 				fmt.Printf("%v", err)
 				return reconcile.Result{}, err
 			}

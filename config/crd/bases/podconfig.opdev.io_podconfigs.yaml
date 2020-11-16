@@ -80,6 +80,10 @@ spec:
             type: object
           status:
             description: PodConfigStatus defines the observed state of PodConfig
+            properties:
+              phase:
+                description: Phase is unset, configuring or configured
+                type: string
             type: object
         required:
         - spec
