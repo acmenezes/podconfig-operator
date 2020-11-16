@@ -7,22 +7,22 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func applyConfig(pod corev1.Pod, podconfig *podconfigv1alpha1.PodConfig) error {
+func applyConfig(pod corev1.Pod, podconfig *podconfigv1alpha1.PodConfig) ([]string, error) {
 
 	// Get the first container pid for pod
 	pid, err := getPid(pod)
 	if err != nil {
 		fmt.Printf("Error getting container pid %v", err)
-		return err
+		return []string{}, err
 	}
 
-	err = createNetworkAttachments(pid, podconfig.Spec.NetworkAttachments)
+	configList, err := createNetworkAttachments(pid, podconfig.Spec.NetworkAttachments)
 	if err != nil {
 		fmt.Printf("Error creating network attachments: %v\n", err)
-		return err
+		return configList, err
 	}
 
-	return nil
+	return configList, nil
 }
 
 func deleteConfig(pod corev1.Pod, podconfig *podconfigv1alpha1.PodConfig) error {
@@ -41,7 +41,9 @@ func deleteConfig(pod corev1.Pod, podconfig *podconfigv1alpha1.PodConfig) error 
 	return nil
 }
 
-func createNetworkAttachments(pid string, networkAttachments []podconfigv1alpha1.Link) error {
+func createNetworkAttachments(pid string, networkAttachments []podconfigv1alpha1.Link) ([]string, error) {
+
+	configList := []string{}
 
 	for _, na := range networkAttachments {
 
@@ -56,21 +58,22 @@ func createNetworkAttachments(pid string, networkAttachments []podconfigv1alpha1
 			err := createBridge(na.Master, ips.getFreeIP(na.CIDR))
 			if err != nil {
 				fmt.Printf("Error creating bridge device %s: %v\n", na.Master, err)
-				return err
+				return configList, err
 			}
 
 		}
 
 		// Create veth pairs for the new networkAttachment
-		err = createVethForPod(pid, na)
+		config, err := createVethForPod(pid, na)
 		if err != nil {
 			fmt.Printf("Error creating new veth pair for pod: %v\n", err)
-			return err
+			return configList, err
 		}
+		configList = append(configList, config)
 	}
 
 	fmt.Println("New network attachment created successfully.")
-	return nil
+	return configList, nil
 }
 
 func deleteNetworkAttachments(pid string, networkAttachments []podconfigv1alpha1.Link) error {

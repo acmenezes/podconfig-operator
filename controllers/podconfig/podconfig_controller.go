@@ -34,8 +34,10 @@ import (
 // PodConfigReconciler reconciles a PodConfig object
 type PodConfigReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log           logr.Logger
+	Scheme        *runtime.Scheme
+	podConfigList *podconfigv1alpha1.PodConfigList
+	// podList       *corev1.PodList // TODO: needs a struct with a podlist for each podconfig
 }
 
 // +kubebuilder:rbac:groups=podconfig.opdev.io,resources=podconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -50,18 +52,18 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	reqLogger := r.Log.WithName("podconfig-operator").WithValues("podconfig", req.NamespacedName)
 
 	// List all pod configuration objects present on the namespace
-	podConfigList := &podconfigv1alpha1.PodConfigList{}
-	err := r.Client.List(context.TODO(), podConfigList)
+	r.podConfigList = &podconfigv1alpha1.PodConfigList{}
+	err := r.Client.List(context.TODO(), r.podConfigList)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if len(podConfigList.Items) <= 0 {
+	if len(r.podConfigList.Items) <= 0 {
 		return reconcile.Result{}, nil
 	}
 	// TODO: Update the status field with conditions while creating the new instance
 
-	for _, podConfig := range podConfigList.Items {
+	for _, podConfig := range r.podConfigList.Items {
 
 		finalizer := "podconfig.finalizers.opdev.io"
 
@@ -135,9 +137,26 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return reconcile.Result{}, nil
 			}
 
-			applyConfig(pod, &podConfig)
+			configList, err := applyConfig(pod, &podConfig)
+			if err != nil {
+				fmt.Printf("%v", err)
+				return reconcile.Result{}, nil
+			}
 
+			configStatus := podconfigv1alpha1.PodConfiguration{PodName: pod.ObjectMeta.Name, AppliedConfig: configList}
+
+			podConfig.Status.Phase = podconfigv1alpha1.PodConfigConfigured
+			fmt.Printf("%v", podConfig.Status.Phase)
+
+			podConfig.Status.Configuration = configStatus
+			fmt.Printf("%v", podConfig.Status.Configuration)
+
+			if err := r.Client.Update(context.TODO(), &podConfig); err != nil {
+				fmt.Printf("%v", err)
+				return reconcile.Result{}, err
+			}
 		}
+
 	}
 	return reconcile.Result{}, nil
 }

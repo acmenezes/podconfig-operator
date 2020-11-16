@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 
 	podconfigv1alpha1 "github.com/acmenezes/podconfig-operator/apis/podconfig/v1alpha1"
@@ -8,13 +9,22 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-func createVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) error {
+func createVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) (string, error) {
+
+	type vethPodConfig struct {
+		podVethName  string
+		podIPAddr    string
+		peerVethName string
+		bridge       string
+	}
+
+	var vethConfig = vethPodConfig{}
 
 	// Get the pods namespace object
 	targetNS, err := ns.GetNS("/tmp/proc/" + pid + "/ns/net")
 
 	if err != nil {
-		return fmt.Errorf("Error getting Pod network namespace: %v", err)
+		return "", fmt.Errorf("Error getting Pod network namespace: %v", err)
 	}
 
 	// Appending the process id number to the names to identify the links
@@ -57,10 +67,12 @@ func createVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) erro
 		}
 
 		// Add ip address to pod veth
-		err = netlink.AddrAdd(podVeth, ips.getFreeIP(networkAttachment.CIDR))
+		addr := ips.getFreeIP(networkAttachment.CIDR)
+		err = netlink.AddrAdd(podVeth, addr)
 		if err != nil {
 			return fmt.Errorf("failed to add IP addr to %q: %v", podVeth, err)
 		}
+		vethConfig.podIPAddr = fmt.Sprintf("%v", addr)
 
 		// Set pod veth link up
 		err = netlink.LinkSetUp(podVeth)
@@ -115,8 +127,21 @@ func createVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) erro
 		fmt.Printf("%v\n", err)
 	}
 
+	// Setup config information for pod
+	vethConfig.podVethName = podVethName
+	vethConfig.bridge = networkAttachment.Master
+	vethConfig.peerVethName = hostVethName
+
+	b, err := json.Marshal(vethConfig)
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		return "", err
+	}
+
+	config := string(b)
+
 	fmt.Println("Veth pair created successfully")
-	return nil
+	return config, nil
 }
 
 func deleteVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) error {
