@@ -84,6 +84,22 @@ spec:
               phase:
                 description: Phase is unset, configuring or configured
                 type: string
+              podConfigurations:
+                items:
+                  description: PodConfiguration for status
+                  properties:
+                    configList:
+                      items:
+                        type: string
+                      type: array
+                    podName:
+                      type: string
+                  required:
+                  - configList
+                  type: object
+                type: array
+            required:
+            - podConfigurations
             type: object
         required:
         - spec

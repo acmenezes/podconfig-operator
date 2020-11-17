@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
 
 	podconfigv1alpha1 "github.com/acmenezes/podconfig-operator/apis/podconfig/v1alpha1"
@@ -42,11 +41,11 @@ func createVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) (str
 
 		// Attempt to check the existence of the pod veth
 		// If if already exists it skips creation and configuration
-		// If any other error comes up it attempts to create
-		// TODO: check netlink error types to better handle this
-
-		// _, err := netlink.LinkByName(podVethName)
-		// if err != nil {
+		_, err := netlink.LinkByName(podVethName)
+		if err == nil {
+			fmt.Printf("Veth link %s already exists on the Pod. Skipping creation ...", podVethName)
+			return nil
+		}
 
 		veth := &netlink.Veth{
 			LinkAttrs: netlink.LinkAttrs{
@@ -54,7 +53,7 @@ func createVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) (str
 			},
 			PeerName: hostVethName,
 		}
-		err := netlink.LinkAdd(veth)
+		err = netlink.LinkAdd(veth)
 		if err != nil {
 			return fmt.Errorf("failed to set %q up: %w", podVethName, err)
 		}
@@ -108,18 +107,23 @@ func createVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) (str
 			return fmt.Errorf("failed to lookup %q: %v", hostVethName, err)
 		}
 
-		// Set host veth link up ( for PoC purposes it's only layer 2 on bridge)
-		if err = netlink.LinkSetUp(hostVeth); err != nil {
-			return fmt.Errorf("failed to set %q up: %w", hostVethName, err)
+		if hostVeth.Attrs().OperState != netlink.OperUp {
+			// Set host veth link up ( for PoC purposes it's only layer 2 on bridge)
+			if err = netlink.LinkSetUp(hostVeth); err != nil {
+				return fmt.Errorf("failed to set %q up: %w", hostVethName, err)
+			}
 		}
 
 		// Set host veth link master bridge
 		br, err := netlink.LinkByName(networkAttachment.Master)
-		err = netlink.LinkSetMaster(hostVeth, br)
-		if err != nil {
-			return fmt.Errorf("Error setting master device to %s: %v", hostVethName, err)
-		}
 
+		if hostVeth.Attrs().MasterIndex != br.Attrs().Index {
+
+			err = netlink.LinkSetMaster(hostVeth, br)
+			if err != nil {
+				return fmt.Errorf("Error setting master device to %s: %v", hostVethName, err)
+			}
+		}
 		return nil
 	})
 
@@ -132,13 +136,7 @@ func createVethForPod(pid string, networkAttachment podconfigv1alpha1.Link) (str
 	vethConfig.bridge = networkAttachment.Master
 	vethConfig.peerVethName = hostVethName
 
-	b, err := json.Marshal(vethConfig)
-	if err != nil {
-		fmt.Printf("Error: %s", err)
-		return "", err
-	}
-
-	config := string(b)
+	config := fmt.Sprintf("%+v", vethConfig)
 
 	fmt.Println("Veth pair created successfully")
 	return config, nil

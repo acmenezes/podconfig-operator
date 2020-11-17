@@ -80,10 +80,27 @@ type PodConfigSpec struct {
 	Vlans []VlanSpec `json:"vlans,omitempty"`
 }
 
+// PodConfigPhase type for status
+type PodConfigPhase string
+
+// Pod config const values
+const (
+	PodConfigUnSet       PodConfigPhase = "unset"
+	PodConfigConfiguring PodConfigPhase = "configuring"
+	PodConfigConfigured  PodConfigPhase = "configured"
+)
+
+// PodConfiguration for status
+type PodConfiguration struct {
+	PodName    string   `json:"podName,omitempty"`
+	ConfigList []string `json:"configList,omitemtpy"`
+}
+
 // PodConfigStatus defines the observed state of PodConfig
 type PodConfigStatus struct {
 	// Phase is unset, configuring or configured
-	Phase string `json:"phase,omitempty"`
+	Phase             PodConfigPhase     `json:"phase,omitempty"`
+	PodConfigurations []PodConfiguration `json:"podConfigurations,omitemtpy"`
 }
 
 // +kubebuilder:object:root=true

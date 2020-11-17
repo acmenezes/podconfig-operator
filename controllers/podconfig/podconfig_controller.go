@@ -137,26 +137,57 @@ func (r *PodConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return reconcile.Result{}, nil
 			}
 
-			_, err := applyConfig(pod, &podConfig)
+			configList, err := applyConfig(pod, &podConfig)
 			if err != nil {
 				fmt.Printf("%v", err)
 				return reconcile.Result{}, nil
 			}
+			fmt.Printf("%v", configList)
 
-			// configStatus := podconfigv1alpha1.PodConfiguration{PodName: pod.ObjectMeta.Name, AppliedConfig: configList}
+			// Update config status for the actual pod in the list
+			configStatus := podconfigv1alpha1.PodConfiguration{PodName: pod.ObjectMeta.Name, ConfigList: configList}
+			fmt.Printf("%v", podConfig.Status.PodConfigurations)
 
-			// podConfig.Status.Phase = podconfigv1alpha1.PodConfigConfigured
-			// fmt.Printf("%v", podConfig.Status.Phase)
-
-			podConfig.Status.Phase = "configured"
-
-			// podConfig.Status.Configuration = configStatus
-			// fmt.Printf("%v", podConfig.Status.Configuration)
-
-			if err := r.Client.Status().Update(context.TODO(), &podConfig); err != nil {
+			// Refresh cached object to avoid conflicts
+			if err := r.Client.Get(context.TODO(), req.NamespacedName, &podConfig); err != nil {
 				fmt.Printf("%v", err)
 				return reconcile.Result{}, err
 			}
+
+			// If the pod config didn't reconcile completely update status
+			if podConfig.Status.Phase != podconfigv1alpha1.PodConfigConfigured {
+
+				isPodNamePresent := false
+
+				for _, p := range podConfig.Status.PodConfigurations {
+					if p.PodName == configStatus.PodName {
+						isPodNamePresent = true
+					}
+				}
+				if isPodNamePresent == false {
+
+					podConfig.Status.PodConfigurations = append(podConfig.Status.PodConfigurations, configStatus)
+
+					fmt.Printf("%v", podConfig.Status.PodConfigurations)
+
+					if err := r.Client.Status().Update(context.TODO(), &podConfig); err != nil {
+						fmt.Printf("%v", err)
+						return reconcile.Result{}, err
+					}
+				}
+			}
+		}
+
+		// All pods for that pod configuration (a.k.a. podConfig) have been configured
+		// update general phase to configured
+		if err := r.Client.Get(context.TODO(), req.NamespacedName, &podConfig); err != nil {
+			fmt.Printf("%v", err)
+			return reconcile.Result{}, err
+		}
+		podConfig.Status.Phase = podconfigv1alpha1.PodConfigConfigured
+		if err := r.Client.Status().Update(context.TODO(), &podConfig); err != nil {
+			fmt.Printf("%v", err)
+			return reconcile.Result{}, err
 		}
 
 	}
