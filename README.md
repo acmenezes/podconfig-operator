@@ -1,6 +1,6 @@
 # podconfig-operator
 
-#### The Runtime Configuration Operator for Unprivileged Pods Running on Kubernetes
+#### The Runtime Configuration Operator for Unprivileged Pods Running on OpenShift
 
 Some times pods or pod owners may not have the system privileges to do dynamic special configurations for their workloads. An example is a CNF that needs to change interface configurations on the fly to create new connections but running in a totally restricted pod with no privilges or network related Linux capabilities. How could a CNF apply those configurations without the root user on the container?
 
