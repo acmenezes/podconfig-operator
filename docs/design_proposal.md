@@ -4,7 +4,21 @@
 
 #### Scope:
 
-1. ***What this operator is not:***
+1. ***What it aims to implement:***
+
+This operator is intended to provide an interface for dynamic, runtime custom configurations for specific Pods and/or containers running on a Kubernetes namespace as unprivileged workloads mostly on hard multi-tenant environments. 
+
+Some of the domains that it can reach are lower layers on Linux TPC/IP networking stack for custom network services (a.k.a. CNFs), short running privileged scripts or binaries, long running processes for tracing and packet analysis, Linux special capability configurations among other possible runtime configurations not provided by the Kubernetes or OpenShift Platforms.
+
+It may be used as means of automation to ease up some hard to do configurations even if the application owner has privileges and is running on its own cluster.
+
+It may and will certainly perform configurations on the node on behalf of those specific Pods and/or Containers but carefully considering not to overlap with any of the operators presented on the next section.
+
+If some interaction between operators is needed it will be done so. But not with overlapping, rather with requests or patching other operators CRDs if it makes sense.
+
+In summary it's a high privileged but trusted workload running as a typical Kubernetes controller performing Linux configurations on behalf of a Pod/Container or a set of Pods constrained to a specific Kubernetes Namespace. Ideally, if multiple namespaces are involved each one should have its own copy of the podconfig operator with specific sets of RBAC controls (roles, rolebindings and service accounts) for each one of them.
+
+2. ***What this operator is not:***
 
 This operator is <b>NOT</b> intended to configure anything cluster wide that affects all pods or an entire node behavior with that intent. Those tasks are already performed by a set of operators such as the ones below:
 
@@ -19,20 +33,6 @@ This operator is <b>NOT</b> intended to replace or configure in any way the trad
 - `Cluster Network Operator` - https://github.com/openshift/cluster-network-operator
 
 This operator is <b>NOT</b> intended to own specific application deployments, daemonsets, statefulsets or any other application workloads that may result on pods or replicas. It <b>SHOULD</b> own only the configurations it provides gracefully terminating them when a Pod terminates, when the identifying label is deleted or when an entire or partial podConfig object is deleted.
-
-2. ***What it aims to implement:***
-
-This operator is intended to provide an interface for dynamic, runtime custom configurations for specific Pods and/or containers running on a Kubernetes namespace as unprivileged workloads mostly on hard multi-tenant environments. 
-
-Some of the domains that it can reach are lower layers on Linux TPC/IP networking stack for custom network services (a.k.a. CNFs), short running privileged scripts or binaries, long running processes for tracing and packet analysis, Linux special capability configurations among other possible runtime configurations not provided by the Kubernetes or OpenShift Platforms.
-
-It may be used as means of automation to ease up some hard to do configurations even if the application owner has privileges and is running on its own cluster.
-
-It may and will certainly perform configurations on the node on behalf of those specific Pods and/or Containers but carefully considering not to overlap with any of the operators already presented on the above section.
-
-If some interaction between operators is needed it will be done so. But not with overlapping, rather with requests or patching other operators CRDs if it makes sense.
-
-In summary it's a high privileged but trusted workload running as a typical Kubernetes controller performing Linux configurations on behalf of a Pod/Container or a set of Pods constrained to a specific Kubernetes Namespace. Ideally, if multiple namespaces are involved each one should have its own copy of the podconfig operator with specific sets of RBAC controls (roles, rolebindings and service accounts) for each one of them.
 
 #### Motivation: Possible Use Cases
 
