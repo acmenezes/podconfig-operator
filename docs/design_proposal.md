@@ -142,6 +142,9 @@ The only caveat here is from the management perspective. A new CRD may be create
 
 The controller workflow represented in the diagram above shows a simplified step by step on how the reconciliation process occur. A few steps before actually running the configuration functions its necessary to find out what pods need new configurations, grab the first container ID from the Pod resource object and pass it as a parameter with a ContainerStatusRequest to CRI-O. From the ContainerStatusResponse we can get the process ID for that container. It's the same process that `crictl inspect` does.
 
+> Here we have an important observation. If the configuration is to be available to a Pod (a.k.a. shared linux namespaces between containers) then the first container ID is fine. If it's container or even process specific (for application with more than one process "inside" a container) then the procedure is a little bit more complex than the one represented on the diagram above.
+
+
 After that we can read the correct path `/proc/<PID>/ns/<desired namespace>` that has a symbolic link with the namespace type and inode for the namespace we want to jump in from the operator. Then we use the ns package from	"github.com/containernetworking/plugins". Within the proper namespace all changes will affect the desired container.
 
 When it comes to the host it's the same process. We move to PID number 1 and the desired namespace and that's all.
