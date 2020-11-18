@@ -47,7 +47,7 @@ Here below we have a list of possible use cases:
 
 3. Linux ambient capabilities or file capabilities needed for specific workloads (Ex: IPC_LOCK) For some environments some Linux Capabilities are harmless but to make them work for containers the UID on the container must be root if we're running them on kubernetes or OCP. To use those capabilities with a non-root user it's necessary to setup ambient capabilities or use file capabilities. With some helper code we can use the libcap2 library we can tweak those capabilities on processes and files. That may be a field to be explored.
 
-4. Temporary "supervised" short run privileged scripts or capability enabled binaries. Let's say that we have an initialization script that was pre-approved, or some clean up code that needs elevated privileges that may be run at certain times. That can be a type of privileged Job that runs an already analysed and approved binary on behalf of the unprivileged pod basically reducing the attack surface.
+4. Temporary "supervised" short run of privileged pre-approved scripts or binaries. Could be an initialization script or some clean up code that needs elevated privileges that may be run at certain times. It can work as a privileged Job run on behalf of the unprivileged pod basically reducing the attack surface.
 
 Other use cases may come up with time.
 
