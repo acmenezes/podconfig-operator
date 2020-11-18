@@ -297,7 +297,7 @@ PING 192.168.99.2 (192.168.99.2) 56(84) bytes of data.
 5 packets transmitted, 5 received, 0% packet loss, time 4077ms
 rtt min/avg/max/mdev = 0.036/0.043/0.063/0.010 ms
 ```
-There we go! Both networks are functional and they were configured after pod creation. That is easier to see if you deploy your own unprivileged pods. The automatic deployment is here only to speed up testing. When deleting the CR all configuration will be delete before from both the pods and the node without disruption the normal work of the cluster.
+There we go! Both networks are functional and they were configured after pod creation. That is easier to see if you deploy your own unprivileged pods. The automatic deployment is here only to speed up testing. When deleting the CR all configuration will be deleted before from both the pods and the node without disrupting the normal cluster behavior.
 
 But now let's check what Kubernetes API gives to us when we deploy the podConfig:
 
@@ -353,7 +353,7 @@ Status:
       {podVethName:pc12841798 podIPAddr:192.168.99.3/24 peerVethName:hpc12841798 bridge:pcbr1}
     Pod Name:  cnf-example-a-846566d4fb-lmxmg
 ```
-Check that you can see the configurations applied per Pod with the pod names in the status field. And that's for now. Many other important pieces of information may be put in there to help unprivileged app admins managed the custom configs for their pods.
+Check that you can see the configurations applied per Pod with the pod names in the status field. And that's for now. Many other important pieces of information may be put in there to help unprivileged app admins manage the custom configs for their pods.
 
 #### Other Links
 
