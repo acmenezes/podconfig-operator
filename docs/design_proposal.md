@@ -145,7 +145,7 @@ The controller workflow represented in the diagram above shows a simplified step
 > Here we have an important observation. If the configuration is to be available to a Pod (a.k.a. shared linux namespaces between containers) then the first container ID is fine. If it's container or even process specific (for application with more than one process "inside" a container) then the procedure is a little bit more complex than the one represented on the diagram above.
 
 
-After that we can read the correct path `/proc/<PID>/ns/<desired namespace>` that has a symbolic link with the namespace type and inode for the namespace we want to jump in from the operator. Then we use the ns package from github.com/containernetworking/plugins. Within the proper namespace all changes will affect the desired container.
+After that we can read the correct path `/proc/<PID>/ns/<desired namespace>` that has a symbolic link with the namespace type and inode for the namespace we want to jump in from the operator. Then we use the ns package from github.com/containernetworking/plugins. Within the proper namespace all changes will affect the desired container or pod.
 
 When it comes to the host it's the same process. We move to PID number 1 and the desired namespace and that's all.
 
