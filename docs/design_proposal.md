@@ -6,7 +6,7 @@
 
 1. ***What it aims to implement:***
 
-This operator is intended to provide an interface for dynamic, runtime custom configurations for specific Pods and/or containers running on a Kubernetes namespace as unprivileged workloads mostly on hard multi-tenant environments. 
+This operator is intended to provide an interface for dynamic, custom runtime configurations for specific Pods, containers or even specific container processes running in a Kubernetes namespace as unprivileged workloads mostly on hard multi-tenant environments. 
 
 Some of the domains that it can reach are lower layers on Linux TPC/IP networking stack for custom network services (a.k.a. CNFs), short running privileged scripts or binaries, long running processes for tracing and packet analysis, Linux special capability configurations among other possible runtime configurations not provided by the Kubernetes or OpenShift Platforms.
 
@@ -16,7 +16,7 @@ It may and will certainly perform configurations on the node on behalf of those 
 
 If some interaction between operators is needed it will be done so. But not with overlapping, rather with requests or patching other operators CRDs if it makes sense.
 
-In summary it's a high privileged but trusted workload running as a typical Kubernetes controller performing Linux configurations on behalf of a Pod/Container or a set of Pods constrained to a specific Kubernetes Namespace. Ideally, if multiple namespaces are involved each one should have its own copy of the podconfig operator with specific sets of RBAC controls (roles, rolebindings and service accounts) for each one of them.
+In summary it's a privileged but trusted workload running as a typical Kubernetes controller performing Linux configurations on behalf of a Pod/Container or a set of Pods constrained to a specific Kubernetes Namespace. Ideally, if multiple namespaces are involved each one should have its own copy of the podconfig operator with specific sets of RBAC controls (roles, rolebindings and service accounts) for each one of them.
 
 2. ***What this operator is not:***
 
@@ -38,14 +38,14 @@ This operator is <b>NOT</b> intended to own specific application deployments, da
 
 The big motivation here is being able to perform highly privileged configurations on behalf of unprivileged pods. That can only be performed by a trusted workload. The proposal is basically to delegate that duty to an operator that can put together both logic and security mechanisms to protect the areas or domains that are being configured.
 
-Here below we have a list of possible use cases:
+Below we have a list of possible use cases:
 
 
 1. Custom Networking configured dynamically on demand (extra veth, vlans, vxlans, tunneling, special data planes connectivity, micro-segmentation etc.) Yes. Multus can configure extra networks to some extent but at container creation time. For those that need network configuration during runtime in a dynamic way, on demand, there seems to be no such solution out there.
 
-2. Long Running Processes for: Tracing system calls, eBPF tracing, packet analysis etc. Those type of tasks, even if we have the privileges are pretty hard to setup. If we know how to do so the privileges are pretty high for most of them. They may be used for process analysis in development, auditing low level behaviors, network performance, intrusion detection and much more. Some solutions are already available for those like the iovisor project. It can be a great combination with this operator if we can deploy that kind of tooling without privileges in a secure way and without the burden of configuring everything in separate. Instead they can be another CRD.
+2. Long Running Processes: Tracing system calls, eBPF tracing, packet analysis etc. Those type of tasks, even if we have the privileges are pretty hard to setup. If we know how to do so the privileges are pretty high for most of them. They may be used for process analysis in development, auditing low level behaviors, network performance, intrusion detection and much more. Some solutions are already available for those like the iovisor project. It can be a great combination with this operator if we can deploy that kind of tooling without privileges in a secure way and without the burden of configuring everything in separate. Instead they can be another CRD.
 
-3. Linux ambient capabilities or file capabilities needed for specific workloads (Ex: IPC_LOCK) For some environments some Linux Capabilities are harmless but to make them work for containers the UID on the container must be root if we're running them on kubernetes or OCP. To use those capabilities with a non-root user it's necessary to setup ambient capabilities or use file capabilities. With some helper code we can use the libcap2 library we can tweak those capabilities on processes and files. That may be a field to be explored.
+3. Linux ambient capabilities or file capabilities needed for specific workloads (Ex: IPC_LOCK) For some environments some Linux Capabilities are harmless but to make them work for containers the UID on the container must be root if we're running them on kubernetes or OCP. To use those capabilities with a non-root user, it's necessary to setup ambient capabilities or use file capabilities. With some helper code we can use the libcap2 library to tweak those capabilities on processes and files. That may be a field to be explored.
 
 4. Temporary "supervised" short run of privileged pre-approved scripts or binaries. Could be an initialization script or some clean up code that needs elevated privileges that may be run at certain times. It can work as a privileged Job run on behalf of the unprivileged pod basically reducing the attack surface.
 
@@ -81,7 +81,7 @@ Some of those requirements may be fulfilled by the operators mentioned in the be
 - CNI api
 - Linux Kernel
 
-All the three above could implement some of those features in different ways. The already generally available APIs for all three are pretty conservative about making breaking changes. Specially the Linux Kernel. Without going deep on what could change on them in order to accomplish some of those tasks we can say that even if we do change something on them some other use cases won't fit their scope.
+All the three above could implement some of those features in different ways. The already generally available APIs for all three are pretty conservative about making breaking changes. Specially in the Linux Kernel. Without going deep on what could change on them in order to accomplish some of those tasks we can say that even if we do change something on them some other use cases won't fit their scope.
 
 Beyond that the timeline to get an important change to be released as generally available may take a long path to get there.
 
@@ -106,7 +106,7 @@ Beyond all those good features from the extending the kubernetes API we still ha
 
 1. A CNF operator spins up pods to run CNF application;
 
-2. The CNF requires high privileged Pod configurations on demand from the Kubeapi-server using the podConfig CRD;
+2. The CNF requires privileged Pod configurations on demand from the Kubeapi-server using the podConfig CRD;
 
 3. An admission process will take place and both authentication and authorization will be checked before granting any access to the podConfig CRD;
 
@@ -140,7 +140,7 @@ The only caveat here is from the management perspective. A new CRD may be create
 
 <img src='img/podconfig-controller.png'></img>
 
-The controller workflow represented in the diagram above shows a simplified step by step on how the reconciliation process occur. A few steps before actually running the configuration functions its necessary to find out what pods need new configurations, grab the first container ID from the Pod resource object and pass it as a parameter with a ContainerStatusRequest to CRI-O. From the ContainerStatusResponse we can get the process ID for that container. It's the same process that `crictl inspect` does.
+The controller workflow represented in the diagram above shows simplified steps on how the reconciliation process occur. A few steps before actually running the configuration functions its necessary to find out what pods need new configurations, grab the first container ID from the Pod resource object and pass it as a parameter with a ContainerStatusRequest to CRI-O. From the ContainerStatusResponse we can get the process ID for that container. It's the same process that `crictl inspect` does.
 
 > Here we have an important observation. If the configuration is to be available to a Pod (a.k.a. shared linux namespaces between containers) then the first container ID is fine. If it's container or even process specific (for application with more than one process "inside" a container) then the procedure is a little bit more complex than the one represented on the diagram above.
 
