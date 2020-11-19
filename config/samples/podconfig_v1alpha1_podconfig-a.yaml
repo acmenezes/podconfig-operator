@@ -5,7 +5,7 @@ metadata:
 spec:
   # Add fields here
   sampleDeployment:
-    create: true
+    create: false
     name: cnf-example-a
     
   networkAttachments:
