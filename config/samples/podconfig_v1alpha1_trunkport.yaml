@@ -1,0 +1,7 @@
+apiVersion: podconfig.opdev.io/v1alpha1
+kind: TrunkPort
+metadata:
+  name: trunkport-sample
+spec:
+  # Add fields here
+  foo: bar

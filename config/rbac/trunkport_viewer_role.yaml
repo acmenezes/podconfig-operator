@@ -1,0 +1,20 @@
+# permissions for end users to view trunkports.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: trunkport-viewer-role
+rules:
+- apiGroups:
+  - podconfig.opdev.io
+  resources:
+  - trunkports
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - podconfig.opdev.io
+  resources:
+  - trunkports/status
+  verbs:
+  - get
