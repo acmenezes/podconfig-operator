@@ -30,8 +30,9 @@ import (
 // TrunkPortReconciler reconciles a TrunkPort object
 type TrunkPortReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log           logr.Logger
+	Scheme        *runtime.Scheme
+	trunkPortList *podconfigv1alpha1.TrunkPortList
 }
 
 // +kubebuilder:rbac:groups=podconfig.opdev.io,resources=trunkports,verbs=get;list;watch;create;update;patch;delete
@@ -41,7 +42,21 @@ func (r *TrunkPortReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("trunkport", req.NamespacedName)
 
-	// your logic here
+	// update trunkport list
+
+	// loop through the TrunkPortList
+
+	// loop through the vlan list and apply configurations:
+
+	// 1 - add functions add/remove vlans to the parent interface
+
+	// 1b -  on the second iteration add other fields to CRD to hold ip configs
+	// possible others vlan related as well
+	// add functions apply/remove ip configurations
+
+	// 2 - add vlan filtering to the Linux bridge carrying them out
+
+	// 3 - on the third iteration validate configuration and update status
 
 	return ctrl.Result{}, nil
 }
