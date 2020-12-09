@@ -20,16 +20,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type Vlan struct {
+	ParentInterfaceName string `json:"parentInterfaceName,omitempty"`
+	VlanID              int16  `json:"vlanID,omitempty"`
+	BridgeName          string `json:"bridgeName,omitempty"`
+}
 
 // TrunkPortSpec defines the desired state of TrunkPort
 type TrunkPortSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of TrunkPort. Edit TrunkPort_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Vlans []Vlan `json:"foo,omitempty"`
 }
 
 // TrunkPortStatus defines the observed state of TrunkPort
