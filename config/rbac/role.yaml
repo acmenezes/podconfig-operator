@@ -32,6 +32,26 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - podconfig.opdev.io
+  resources:
+  - trunkports
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - podconfig.opdev.io
+  resources:
+  - trunkports/status
+  verbs:
+  - get
+  - patch
+  - update
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1

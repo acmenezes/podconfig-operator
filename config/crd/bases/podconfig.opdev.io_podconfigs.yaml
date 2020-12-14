@@ -1,10 +1,10 @@
 
 ---
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: (unknown)
+    controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
   name: podconfigs.podconfig.opdev.io
 spec:
@@ -15,99 +15,100 @@ spec:
     plural: podconfigs
     singular: podconfig
   scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: PodConfig is the Schema for the podconfigs API
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: PodConfigSpec defines the desired state of PodConfig
-            properties:
-              networkAttachments:
-                description: List of new interfaces to configure on Pod
-                items:
-                  description: Link type for new Pod interfaces
-                  properties:
-                    cidr:
-                      type: string
-                    linkType:
-                      type: string
-                    master:
-                      type: string
-                    name:
-                      type: string
-                    parent:
-                      type: string
-                  required:
-                  - linkType
-                  - parent
-                  type: object
-                type: array
-              sampleDeployment:
-                description: Flag to enable sample deployment
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: PodConfig is the Schema for the podconfigs API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: PodConfigSpec defines the desired state of PodConfig
+          properties:
+            networkAttachments:
+              description: List of new interfaces to configure on Pod
+              items:
+                description: Link type for new Pod interfaces
                 properties:
-                  create:
-                    type: boolean
+                  cidr:
+                    type: string
+                  linkType:
+                    type: string
+                  master:
+                    type: string
                   name:
                     type: string
+                  parent:
+                    type: string
+                required:
+                - linkType
+                - parent
                 type: object
-              vlans:
-                description: VLANs to be added to subinterfaces
-                items:
-                  description: VlanSpec type for Pods
-                  properties:
-                    bridgeName:
+              type: array
+            sampleDeployment:
+              description: Flag to enable sample deployment
+              properties:
+                create:
+                  type: boolean
+                name:
+                  type: string
+              type: object
+            vlans:
+              description: VLANs to be added to subinterfaces
+              items:
+                description: VlanSpec type for Pods
+                properties:
+                  bridgeName:
+                    type: string
+                  parentInterfaceName:
+                    type: string
+                  vlanID:
+                    type: integer
+                type: object
+              type: array
+          type: object
+        status:
+          description: PodConfigStatus defines the observed state of PodConfig
+          properties:
+            phase:
+              description: Phase is unset, configuring or configured
+              type: string
+            podConfigurations:
+              items:
+                description: PodConfiguration for status
+                properties:
+                  configList:
+                    items:
                       type: string
-                    parentInterfaceName:
-                      type: string
-                    vlanID:
-                      type: integer
-                  type: object
-                type: array
-            type: object
-          status:
-            description: PodConfigStatus defines the observed state of PodConfig
-            properties:
-              phase:
-                description: Phase is unset, configuring or configured
-                type: string
-              podConfigurations:
-                items:
-                  description: PodConfiguration for status
-                  properties:
-                    configList:
-                      items:
-                        type: string
-                      type: array
-                    podName:
-                      type: string
-                  required:
-                  - configList
-                  type: object
-                type: array
-            required:
-            - podConfigurations
-            type: object
-        required:
-        - spec
-        type: object
+                    type: array
+                  podName:
+                    type: string
+                required:
+                - configList
+                type: object
+              type: array
+          required:
+          - podConfigurations
+          type: object
+      required:
+      - spec
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
     served: true
     storage: true
-    subresources:
-      status: {}
 status:
   acceptedNames:
     kind: ""

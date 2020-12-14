@@ -28,3 +28,5 @@ spec:
         image: "nicolaka/netshoot:latest"
         imagePullPolicy: Always
         name: cnf-example
+      nodeSelector:
+        app: ocp-test
