@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	podconfigv1alpha1 "github.com/acmenezes/podconfig-operator/apis/podconfig/v1alpha1"
+	podconfigv1alpha1 "github.com/opdev/podconfig-operator/apis/podconfig/v1alpha1"
 )
 
 // PodConfigReconciler reconciles a PodConfig object

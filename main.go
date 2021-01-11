@@ -27,8 +27,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	podconfigv1alpha1 "github.com/acmenezes/podconfig-operator/apis/podconfig/v1alpha1"
-	podconfigcontroller "github.com/acmenezes/podconfig-operator/controllers/podconfig"
+	podconfigv1alpha1 "github.com/opdev/podconfig-operator/apis/podconfig/v1alpha1"
+	podconfigcontroller "github.com/opdev/podconfig-operator/controllers/podconfig"
 	// +kubebuilder:scaffold:imports
 )
 

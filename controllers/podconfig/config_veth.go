@@ -3,8 +3,8 @@ package controllers
 import (
 	"fmt"
 
-	podconfigv1alpha1 "github.com/acmenezes/podconfig-operator/apis/podconfig/v1alpha1"
 	"github.com/containernetworking/plugins/pkg/ns"
+	podconfigv1alpha1 "github.com/opdev/podconfig-operator/apis/podconfig/v1alpha1"
 	"github.com/vishvananda/netlink"
 )
 

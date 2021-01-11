@@ -2,7 +2,7 @@ domain: opdev.io
 layout: go.kubebuilder.io/v2
 multigroup: true
 projectName: pod-config-operator
-repo: github.com/acmenezes/podconfig-operator
+repo: github.com/opdev/podconfig-operator
 resources:
 - group: podconfig
   kind: PodConfig

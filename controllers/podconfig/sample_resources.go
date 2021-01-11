@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	podconfigv1alpha1 "github.com/acmenezes/podconfig-operator/apis/podconfig/v1alpha1"
+	podconfigv1alpha1 "github.com/opdev/podconfig-operator/apis/podconfig/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

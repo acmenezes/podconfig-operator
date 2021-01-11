@@ -1,4 +1,4 @@
-module github.com/acmenezes/podconfig-operator
+module github.com/opdev/podconfig-operator
 
 go 1.13
 
