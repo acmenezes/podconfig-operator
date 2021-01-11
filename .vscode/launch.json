@@ -4,16 +4,10 @@
     {
       "name": "Remote",
       "type": "go",
-      "request": "attach",
-      "mode": "remote",
+      "request": "launch",
+      "mode": "debug",
       "remotePath": "/root/go/src/github.com/acmenezes/podconfig-operator",
-      "port": 2345,
-<<<<<<< HEAD
-      "host": "<ELB HOST HERE>",
-=======
-      "host": "a350b1e992af24ce4b8f9622533a2701-871507767.ca-central-1.elb.amazonaws.com",
-      // "program": "/home/Users/alex/go/src/github.com/acmenezes/podconfig-operator",
->>>>>>> ef25d8290e392c77a9832742713fdfeb5f844bc1
+      "program": "/root/go/src/github.com/project/podconfig-operator"
     }
   ]
 }
