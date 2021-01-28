@@ -26,7 +26,7 @@ To know more about that check the [Design Proposal](docs/design_proposal.md) sec
 First clone the project to the desired path.
 
 ```
-git clone git@github.com:acmenezes/podconfig-operator.git
+git clone https://github.com/opdev/podconfig-operator.git
 ```
 
 Then run the make deploy target all the necessary manifests will be applied.
